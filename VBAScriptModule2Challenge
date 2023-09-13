@@ -1,0 +1,144 @@
+Attribute VB_Name = "Module1"
+Sub stockanalysis_eachws()
+
+'Set up loop for entire workbook
+Dim ws As Worksheet
+For Each ws In Worksheets
+
+'Add new column headings & fit column width
+        ws.Range("I1").Value = "Ticker"
+        ws.Range("J1").Value = "Yearly Change"
+        ws.Range("K1").Value = "Percent Change"
+        ws.Range("L1").Value = "Total Stock Volume"
+        
+        ws.Range("I1:L1").EntireColumn.AutoFit
+
+'Create variables & set beginning values (will need to reset/update some numbers for each loop)
+    Dim ticker As String
+    
+    Dim percentchange As Double
+    percentchange = 0
+    
+    Dim stocktotal As Double
+    stocktotal = 0
+    
+    Dim summarytablerow As Double
+    summarytablerow = 2
+    
+    Dim previousticker As String
+    Dim nextticker As String
+    Dim openingprice As Double
+    Dim closingprice As Double
+    Dim pricechange As Double
+     
+'Set last row function
+    Dim lastrow As Double
+    lastrow = ws.Cells(Rows.Count, 1).End(xlUp).Row
+    
+'Loop through all rows
+    For i = 2 To lastrow
+    ticker = ws.Cells(i, 1).Value
+    nextticker = ws.Cells(i + 1, 1).Value
+    previousticker = ws.Cells(i - 1, 1).Value
+    
+'Check to see if next row is the same, if it isn't then grab closing price & add (i,7) to stock volume
+'Calculate price change & percent change
+        If nextticker <> ticker Then
+            closingprice = ws.Cells(i, 6).Value
+            stocktotal = stocktotal + ws.Cells(i, 7).Value
+            
+            pricechange = closingprice - openingprice
+            percentchange = pricechange / openingprice
+        
+'Print info into summarytable
+            ws.Range("I" & summarytablerow).Value = ticker
+            ws.Range("J" & summarytablerow).Value = pricechange
+            ws.Range("K" & summarytablerow).Value = percentchange
+            ws.Range("K" & summarytablerow).NumberFormat = "0.00%"
+            ws.Range("L" & summarytablerow).Value = stocktotal
+            
+'Add conditional formatting for positive/negative percent changes
+        If ws.Range("K" & summarytablerow).Value > 0 Then
+            ws.Range("K" & summarytablerow).Interior.ColorIndex = 4
+        Else: ws.Range("K" & summarytablerow).Interior.ColorIndex = 3
+        End If
+           
+'Add to the summary table row
+summarytablerow = summarytablerow + 1
+
+'Reset values
+stocktotal = 0
+        
+'Find firstticker - check see if it's the same as previous, if it's not then grab opening price
+        ElseIf previousticker <> ticker Then
+        openingprice = ws.Cells(i, 3).Value
+                                    
+'If rows are the same then add to total & subtract from price
+        Else:
+            stocktotal = stocktotal + ws.Cells(i, 7).Value
+            pricechange = ws.Cells(i + 1, 6).Value - ws.Cells(i, 3).Value
+       
+        End If
+ 
+    Next i
+    
+'Add functionality to return stock with greatest increase & decrease
+
+'Add new column headings & fit column width
+        ws.Range("P1").Value = "Ticker"
+        ws.Range("Q1").Value = "Value"
+        ws.Range("O2").Value = "Greatest % Increase"
+        ws.Range("O3").Value = "Greatest % Decrease"
+        ws.Range("O4").Value = "Greatest Total Volume"
+        
+        ws.Range("O1:P1").EntireColumn.AutoFit
+
+'Define variables
+    Dim greatestincrease As Double
+    Dim greatestdecrease As Double
+    Dim greatesttotal As Double
+    Dim rownumber As Double
+    
+    Dim increaseticker As String
+    Dim decreaseticker As String
+    Dim greatestticker As String
+    
+'Use Max range function + Match to find row number & values then print each before starting over
+    rownumber = WorksheetFunction.Match(WorksheetFunction.Max(ws.Range("K2:K" & lastrow)), ws.Range("K2:K" & lastrow), 0)
+        greatestincrease = ws.Cells(rownumber + 1, 11)
+        increaseticker = ws.Cells(rownumber + 1, 9)
+        
+            ws.Range("P2").Value = increaseticker
+            ws.Range("Q2").Value = greatestincrease
+            ws.Range("Q2").NumberFormat = "0.00%"
+    
+    rownumber = WorksheetFunction.Match(WorksheetFunction.Min(ws.Range("K2:K" & lastrow)), ws.Range("K2:K" & lastrow), 0)
+        greatestdecrease = ws.Cells(rownumber + 1, 11)
+        decreaseticker = ws.Cells(rownumber + 1, 9)
+        
+            ws.Range("P3").Value = decreaseticker
+            ws.Range("Q3").Value = greatestdecrease
+            ws.Range("Q3").NumberFormat = "0.00%"
+            
+    rownumber = WorksheetFunction.Match(WorksheetFunction.Max(ws.Range("L2:L" & lastrow)), ws.Range("L2:L" & lastrow), 0)
+        greatesttotal = ws.Cells(rownumber + 1, 12)
+        greatestticker = ws.Cells(rownumber + 1, 9)
+        
+            ws.Range("P4").Value = greatestticker
+            ws.Range("Q4").Value = greatesttotal
+            
+Next ws
+
+End Sub
+
+Sub ClearSummaryTable()
+
+Dim ws As Worksheet
+For Each ws In Worksheets
+
+ws.Range("I:Q" & lastrow).Value = " "
+ws.Range("I:Q" & lastrow).Interior.Color = xlNone
+
+Next ws
+
+End Sub
